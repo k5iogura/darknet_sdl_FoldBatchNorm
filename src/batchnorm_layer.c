@@ -148,9 +148,10 @@ void forward_batchnorm_layer(layer l, network net)
         normalize_cpu(l.output, l.mean, l.variance, l.batch, l.out_c, l.out_h*l.out_w);   
         copy_cpu(l.outputs*l.batch, l.output, 1, l.x_norm, 1);
     } else {
-        normalize_cpu(l.output, l.rolling_mean, l.rolling_variance, l.batch, l.out_c, l.out_h*l.out_w);
+        //normalize_cpu(l.output, l.rolling_mean, l.rolling_variance, l.batch, l.out_c, l.out_h*l.out_w);
+        normalize_cpu2(l.output,l.scales,l.rolling_mean,l.rolling_variance,l.biases,l.batch,l.out_c,l.out_h*l.out_w);
     }
-    scale_bias(l.output, l.scales, l.batch, l.out_c, l.out_h*l.out_w);
+    //scale_bias(l.output, l.scales, l.batch, l.out_c, l.out_h*l.out_w);
     add_bias(l.output, l.biases, l.batch, l.out_c, l.out_h*l.out_w);
 }
 

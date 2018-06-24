@@ -513,7 +513,7 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
     if(l.batch_normalize){
     for(i=0;i<m;i++){
         for(j=0;j<k;j++){
-            a[i*k+j] /= (sqrt(l.rolling_variance[i]) + .000001f);
+            a[i*k+j] *= l.scales[i]/(sqrt(l.rolling_variance[i]) + .000001f);
         }
     }
     }

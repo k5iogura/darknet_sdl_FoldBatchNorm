@@ -130,10 +130,17 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
         for(f = 0; f < filters; ++f){
             for(i = 0; i < spatial; ++i){
                 int index = b*filters*spatial + f*spatial + i;
-                //x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .000001f);   //removed
-                //x[index] = x[index]/(sqrt(variance[f])+.000001f) - mean[f]/(sqrt(variance[f]) + .000001f);   //removed
-                x[index] = x[index] - mean[f]/(sqrt(variance[f]) + .000001f);       //add
+                x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .000001f);   //removed
             }
+        }
+    }
+}
+void normalize_cpu2(float *x, float *scale, float *mean, float *variance, float *biases, int batch, int filters, int spatial)
+{
+    int b, f, i;
+    for(b = 0; b < batch; ++b){
+        for(f = 0; f < filters; ++f){
+            biases[f] = -scale[f]*mean[f]/(sqrt(variance[f]) + .000001f);
         }
     }
 }

@@ -1084,20 +1084,20 @@ void load_convolutional_weights(layer l, FILE *fp)
         }
     }
     fread(l.weights, sizeof(float), num, fp);
-    /*if (l.batch_normalize){
+    if (l.batch_normalize){
         int i,j;
         for(i=0;i<l.n;i++){
-            float std_d = sqrtf(l.rolling_variance[i]);
+            float std_d = sqrt(l.rolling_variance[i]) + .000001f;
             for(j=0;j<l.c*l.size*l.size;j++){
                 int index = i*l.c*l.size*l.size + j;
-                l.weights[index] = ( l.scales[i] * l.weights[index] )/std_d;
+                l.weights[index]*= l.scales[i]/std_d;
             }
         }
         for(i=0;i<l.n;i++){
-            float std_d = sqrtf(l.rolling_variance[i]);
-            l.biases[i] = l.scales[i] * (l.biases[i] - l.rolling_mean[i]) /std_d;
+            float std_d = sqrt(l.rolling_variance[i]) + .000001f;
+            l.biases[i] = -l.scales[i] * l.rolling_mean[i] /std_d;
         }
-    }*/
+    }
     //if(l.c == 3) scal_cpu(num, 1./256, l.weights, 1);
     if (l.flipped) {
         transpose_matrix(l.weights, l.c*l.size*l.size, l.n);
@@ -1119,7 +1119,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
     }
 #endif
     fprintf(stderr, "Loading weights from %s...", filename);
-    fflush(stdout);
+    fflush(stderr);
     FILE *fp = fopen(filename, "rb");
     if(!fp) file_error(filename);
 
@@ -1130,7 +1130,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
     fread(&minor, sizeof(int), 1, fp);
     fread(&revision, sizeof(int), 1, fp);
     if ((major*10 + minor) >= 2){ // Training on 64bit OS (seen is 8Bytes)
-        printf(
+        fprintf(stderr,
             "64bit OS trained major/minor/revision = %d/%d/%d sizeof(size_t)=%ld\n",
             major,minor,revision,sizeof(size_t)
         );
@@ -1147,7 +1147,7 @@ void load_weights_upto(network *net, char *filename, int start, int cutoff)
             int iseen = 0;
             fread(&iseen, sizeof(int), 1, fp);
             *net->seen = iseen;
-            printf(
+            fprintf(stderr,
                 "32bit OS trained major/minor/revision = %d/%d/%d sizeof(size_t)=%ld\n",
                 major,minor,revision,sizeof(size_t)
             );

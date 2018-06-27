@@ -509,13 +509,16 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
     float *b = net.workspace;
     float *c = l.output;
 
-    int j;  //add
-    if(l.batch_normalize){
-    for(i=0;i<m;i++){
-        for(j=0;j<k;j++){
-            a[i*k+j] *= l.scales[i]/(sqrt(l.rolling_variance[i]) + .000001f);
+    float *A;
+    if(0 && l.batch_normalize){ //add
+        int j;
+        float *A = (float*)malloc(sizeof(float)*k*m);
+        for(i=0;i<m;i++){
+            for(j=0;j<k;j++){
+                A[i*k+j]  = a[i*k+j];
+                a[i*k+j] *= l.scales[i]/(sqrt(l.rolling_variance[i]) + .000001f);
+            }
         }
-    }
     }
     for(i = 0; i < l.batch; ++i){
         im2col_cpu(net.input, l.c, l.h, l.w, 
@@ -528,13 +531,15 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
         c += n*m;
         net.input += l.c*l.h*l.w;
     }
-    if(l.batch_normalize){
-    c-=n*m;
-    for(i=0;i<m;i++){
-        for(j=0;j<n;j++){
-          //  c[i*n+j]/=(sqrt(l.rolling_variance[i])+.000001f);
+    if(0 && l.batch_normalize){
+        int j;
+        c-=n*m;
+        for(i=0;i<m;i++){
+            for(j=0;j<n;j++){
+                c[i*n+j]/=(sqrt(l.rolling_variance[i])+.000001f);
+            }
         }
-    }
+        free(A);
     }
 
     if(l.batch_normalize){
@@ -545,6 +550,7 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
 
     activate_array(l.output, m*n*l.batch, l.activation);
     if(l.binary || l.xnor) swap_binary(&l);
+    //for(i=0;i<k*m;i++) a[i]=A[i];
 }
 
 void forward_convolutional_layer(convolutional_layer l, network net)

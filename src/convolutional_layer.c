@@ -475,6 +475,28 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
     }
 }
 
+static void row2col_major(int N, int K, float *in_b, float *B){
+    int j,k;
+    int m,n;
+    for(k=0;k<K;k++)
+        for(j=0;j<N;j++){
+            m = k*N + j;
+            n = j*K + k;
+            B[n] = in_b[m];
+        }
+}
+
+static void col2row_major(int N, int K, float *in_b, float *B){
+    int j,k;
+    int m,n;
+    for(j=0;j<N;j++)
+        for(k=0;k<K;k++){
+            m = k*N + j;
+            n = j*K + k;
+            B[m] = in_b[n];
+        }
+}
+
 void forward_convolutional_layer_cpu(convolutional_layer l, network net)
 {
     int out_h = l.out_h;
@@ -521,15 +543,26 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
         }
     }
     for(i = 0; i < l.batch; ++i){
+        float *B = (float*)malloc(sizeof(float)*k*n);
         im2col_cpu(net.input, l.c, l.h, l.w, 
                 l.size, l.stride, l.pad, b);
+        float xx=0,yy=0;
+        int j;
+        for(j=0;j<n*k;j++) xx+=b[j];
+        row2col_major(n,k,b,B);
+        for(j=0;j<n*k;j++) yy+=B[j];
+        if(xx!=yy){
+            printf("xx/yy=%f/%f\n",xx,yy);
+            exit(0);
+        }
         if(l.binary)
             gemm_nn_sign(m,n,k,l.scale_alpha,l.signWb,k,b,n,c,n);
             //gemm_nn_binary(m,n,k,a,k,b,n,c,n);
         else
-            gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+            gemm(0,0,m,n,k,1,a,k,B,n,1,c,n);
         c += n*m;
         net.input += l.c*l.h*l.w;
+        free(B);
     }
     if(0 && l.batch_normalize){
         int j;

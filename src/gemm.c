@@ -89,6 +89,22 @@ void gemm_nn(int M, int N, int K, float ALPHA,
     }
 }
 
+void gemm_nn_cmajor(int M, int N, int K, float ALPHA, 
+        float *A, int lda, 
+        float *B, int ldb,
+        float *C, int ldc)
+{
+    int i,j,k;
+    for(i = 0; i < M; ++i){
+        for(j = 0; j < N; ++j){
+            for(k = 0; k < K; ++k){
+                register float A_PART = ALPHA*A[i*lda+k];
+                C[i*ldc+j] += A_PART*B[k*ldb+j];
+            }
+        }
+    }
+}
+
 void gemm_nn_binary(int M, int N, int K,
         float *A, int lda, 
         float *B, int ldb,
@@ -220,7 +236,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         if(!FPGA_init){FPGA_init=1;gemm_fpga_init();}
         gemm_nn_fpga(M, N, K, ALPHA, A, lda, B, ldb, C, ldc);
 #else
-        gemm_nn(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+        gemm_nn_cmajor(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
 #endif
     }else if(TA && !TB)
         gemm_tn(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);

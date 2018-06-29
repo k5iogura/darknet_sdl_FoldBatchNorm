@@ -99,7 +99,7 @@ $(OBJDIR)%.o: %.c $(DEPS)
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
-gemm1.aocx:gemm1.cl
+gemm1.aocx:ocl/gemm1.cl
 	aoc -march=emulator -g -v -report $^ -o $(@)
 
 obj:

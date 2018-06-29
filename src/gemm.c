@@ -99,7 +99,7 @@ void gemm_nn_cmajor(int M, int N, int K, float ALPHA,
         for(j = 0; j < N; ++j){
             for(k = 0; k < K; ++k){
                 register float A_PART = ALPHA*A[i*lda+k];
-                C[i*ldc+j] += A_PART*B[k*ldb+j];
+                C[i*ldc+j] += A_PART*B[k+j*lda];
             }
         }
     }

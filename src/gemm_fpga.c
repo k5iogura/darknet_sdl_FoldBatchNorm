@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "cl_head.h"
 
 #ifdef FPGA
 #ifdef __APPLE__
@@ -167,20 +168,17 @@ void gemm_nn_fpga(int M, int N, int K, float ALPHA,
     printf("fW-kernel M/N/K=%d/%d/%d\n",M,N,K);
   }
 /* Set OpenCL Kernel Parameters */
-  ret|= clSetKernelArg (kernel, 0, sizeof (cl_int),  &M);
-  ret|= clSetKernelArg (kernel, 1, sizeof (cl_int),  &N);
-  ret|= clSetKernelArg (kernel, 2, sizeof (cl_int),  &K);
-  ret|= clSetKernelArg (kernel, 3, sizeof (cl_float),&ALPHA);
-  ret|= clSetKernelArg (kernel, 4, sizeof (cl_mem), (void *) &memobjA);
-  ret|= clSetKernelArg (kernel, 5, sizeof (cl_int),  &K);
-  ret|= clSetKernelArg (kernel, 6, sizeof (cl_mem), (void *) &memobjB);
-  ret|= clSetKernelArg (kernel, 7, sizeof (cl_int),  &N);
-  ret|= clSetKernelArg (kernel, 8, sizeof (cl_mem), (void *) &memobjC);
-  ret|= clSetKernelArg (kernel, 9, sizeof (cl_int),  &N);
-  if(ret != CL_SUCCESS){
-	fprintf(stderr,"Faild clSetKernelArg %d\n",ret);
-	exit(ret);
-  }
+  ret|= clSetKernelArg (kernel, 0, sizeof (cl_int),  &M);               checkErr(ret,"clSetKernelArg-0");
+  ret|= clSetKernelArg (kernel, 1, sizeof (cl_int),  &N);               checkErr(ret,"clSetKernelArg-1");
+  ret|= clSetKernelArg (kernel, 2, sizeof (cl_int),  &K);               checkErr(ret,"clSetKernelArg-2");
+  ret|= clSetKernelArg (kernel, 3, sizeof (cl_float),&ALPHA);           checkErr(ret,"clSetKernelArg-3");
+  ret|= clSetKernelArg (kernel, 4, sizeof (cl_mem), (void *) &memobjA); checkErr(ret,"clSetKernelArg-4");
+  ret|= clSetKernelArg (kernel, 5, sizeof (cl_int),  &K);               checkErr(ret,"clSetKernelArg-5");
+  ret|= clSetKernelArg (kernel, 6, sizeof (cl_mem), (void *) &memobjB); checkErr(ret,"clSetKernelArg-6");
+  ret|= clSetKernelArg (kernel, 7, sizeof (cl_int),  &N);               checkErr(ret,"clSetKernelArg-7");
+  ret|= clSetKernelArg (kernel, 8, sizeof (cl_mem), (void *) &memobjC); checkErr(ret,"clSetKernelArg-8");
+  ret|= clSetKernelArg (kernel, 9, sizeof (cl_int),  &N);               checkErr(ret,"clSetKernelArg-9");
+
 /* Execute OpenCL Kernel */
   ret = clEnqueueTask (command_queue, kernel, 0, NULL, NULL);
   clFinish(command_queue);

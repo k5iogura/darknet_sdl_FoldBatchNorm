@@ -4,7 +4,7 @@ CUDNN=0
 OPENCV?=0
 OPENMP=0
 DEBUG?=0
-FPGA?=0
+FPGA?=1
 
 ARCH= -gencode arch=compute_20,code=[sm_20,sm_21] \
       -gencode arch=compute_30,code=sm_30 \
@@ -72,11 +72,11 @@ OBJ+=sdl_image.o
 endif
 
 ifeq ($(FPGA),1)
-ALTERAOCLSDKROOT    =/home/ogura/altera/15.1/hdl
-AOCL_COMPILE_CONFIG =-I/home/ogura/altera/15.1/hld/host/include
-AOCL_LINK_CONFIG    =-L/home/ogura/altera/15.1/hld/board/terasic/de1soc/arm32/lib -L/home/ogura/altera/15.1/hld/host/arm32/lib -Wl,--no-as-needed -lalteracl  -lalterahalmmd -lalterammdpcie -lelf -lrt -ldl
-CFLAGS+= -DFPGA $(AOCL_COMPILE_CONFIG)
-LDFLAGS+=$(AOCL_LINK_CONFIG)
+#ALTERAOCLSDKROOT    =/home/ogura/altera/15.1/hdl
+#AOCL_COMPILE_CONFIG =-I/home/ogura/altera/15.1/hld/host/include
+#AOCL_LINK_CONFIG    =-L/home/ogura/altera/15.1/hld/board/terasic/de1soc/arm32/lib -L/home/ogura/altera/15.1/hld/host/arm32/lib -Wl,--no-as-needed -lalteracl  -lalterahalmmd -lalterammdpcie -lelf -lrt -ldl
+CFLAGS+= -DFPGA $(shell aocl compile-config)
+LDFLAGS+=$(shell aocl link-config)
 OBJ+=gemm_fpga.o
 endif
 

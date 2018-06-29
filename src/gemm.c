@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include "blas.h"
 
 void gemm_bin(int M, int N, int K, float ALPHA, 
         char  *A, int lda, 
@@ -232,6 +233,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         }
     }
     float *c=(float*)malloc(M*N*sizeof(float));
+    //fill_cpu(M*N, .0f, c, 1);
     for(i=0;i<M*N;i++) c[i]=.0f;
     if(!TA && !TB){
 #ifdef FPGA

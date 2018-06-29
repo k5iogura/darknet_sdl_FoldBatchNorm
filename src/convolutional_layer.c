@@ -532,7 +532,7 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
     float *c = l.output;
 
     float *A;
-    if(0 && l.batch_normalize){ //add
+    if(0 && l.batch_normalize){ //add for foldBN test
         int j;
         float *A = (float*)malloc(sizeof(float)*k*m);
         for(i=0;i<m;i++){
@@ -546,15 +546,7 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
         float *B = (float*)calloc(k*n,sizeof(float));
         im2col_cpu(net.input, l.c, l.h, l.w, 
                 l.size, l.stride, l.pad, b);
-        double xx=0,yy=0;
-        int j;
-        for(j=0;j<n*k;j++) xx+=b[j];
         row2col_major(n,k,b,B);
-        for(j=0;j<n*k;j++) yy+=B[j];
-        if((xx-yy)>0.000001f){
-            printf("n,k,m = %d/%d/%d xx/yy=%e/%e dif=%e\n",n,k,m,xx,yy,(xx-yy));
-            exit(0);
-        }
         if(l.binary)
             gemm_nn_sign(m,n,k,l.scale_alpha,l.signWb,k,b,n,c,n);
             //gemm_nn_binary(m,n,k,a,k,b,n,c,n);
@@ -564,7 +556,7 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
         net.input += l.c*l.h*l.w;
         free(B);
     }
-    if(0 && l.batch_normalize){
+    if(0 && l.batch_normalize){ //add for foldBN test
         int j;
         c-=n*m;
         for(i=0;i<m;i++){

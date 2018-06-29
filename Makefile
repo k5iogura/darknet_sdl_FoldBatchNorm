@@ -4,7 +4,7 @@ GPU=0
 CUDNN=0
 OPENCV?=1
 DEBUG?=1
-FPGA?=1
+FPGA_EMU?=1
 
 ARCH= \
       -gencode arch=compute_30,code=sm_30 \
@@ -30,7 +30,7 @@ LDFLAGS= -lm -pthread
 COMMON= -Iinclude/ -Isrc/
 CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
-ifeq ($(FPGA), 1) 
+ifeq ($(FPGA_EMU), 1) 
 CFLAGS+= -DFPGA
 OBJ+=gemm_fpga.o
 CFLAGS+= $(shell aocl compile-config)

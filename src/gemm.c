@@ -241,7 +241,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         gemm_nn_fpga  (M, N, K, ALPHA, A, lda, B, ldb, C, ldc);
         gemm_nn_cmajor(M, N, K, ALPHA, A, lda, B, ldb, c, ldc);
         for(i=0;i<M*N;i++){
-            if((C[i]-c[i])>.000001f){
+            if(fabs(C[i]-c[i])>.000001f){
                 printf("index-%d %f %f\n",i,C[i],c[i]);
                 break;
             }

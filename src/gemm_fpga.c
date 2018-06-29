@@ -22,6 +22,7 @@ static cl_mem memobjB = NULL;
 static cl_mem memobjC = NULL;
 static cl_program program = NULL;
 static cl_kernel kernel = NULL;
+static cl_kernel nkernel[10];
 static cl_platform_id platform_id = NULL;
 
 int gemm_fpga_init () {
@@ -30,6 +31,16 @@ int gemm_fpga_init () {
   cl_uint ret_num_platforms;
   cl_int ret;
   cl_int ret1,ret2,ret3;
+
+    const char *k_name[2]={"gemm_nn9W","gemm_nnfW"};
+    find_CnKQ(
+        "Intel(R) FPGA SDK for OpenCL(TM)",
+        "gemm1.aocx",
+        2,
+        k_name,
+        &context, nkernel, &command_queue
+    );
+return CL_SUCCESS;
 
   FILE *fp;
   char fileName[] = "./gemm1.aocx";
@@ -53,6 +64,17 @@ int gemm_fpga_init () {
 	fprintf(stderr,"Faild clGetPlatform %d\n",ret);
 	exit(ret);
   }
+  cl_ulong local_mem;
+  char platform_name[1024], device_name[1024];
+  clGetPlatformInfo(platform_id,CL_PLATFORM_NAME,sizeof(platform_name),platform_name,NULL);
+  printf("\tNo.%d-\"%s\"\n",i,platform_name);
+  ret = clGetDeviceIDs (platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &ret_num_devices);
+  printf("\t%d devices\n",ret_num_devices);
+  for(j=0;j<ret_num_devices;j++){
+    clGetDeviceInfo(device_id, CL_DEVICE_NAME,sizeof(device_name),device_name,NULL);
+    clGetDeviceInfo(device_id, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong),&local_mem,NULL);
+    printf("\t\tNo.%d-\"%s\" : LOCAL_MEM_SIZE=%lu\n",j,device_name,local_mem);
+  }
   ret =
 	clGetDeviceIDs (platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id,
 					&ret_num_devices);
@@ -60,7 +82,6 @@ int gemm_fpga_init () {
 	fprintf(stderr,"Faild clGetDeviceIDs %d\n",ret);
 	exit(ret);
   }
-  cl_ulong local_mem;
   clGetDeviceInfo(device_id, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong),&local_mem,NULL);
   fprintf(stderr,"LOCAL_MEM_SIZE=%lu\n",local_mem);
 
@@ -97,7 +118,7 @@ int gemm_fpga_init () {
 
   cl_kernel kernels[10];
   cl_uint n_kernels=1;
-  ret = clCreateKernelsInProgram(program,1,kernels,&n_kernels);
+  ret = clCreateKernelsInProgram(program,2,kernels,&n_kernels);
   fprintf(stderr,"In Program kernels = %d\n",n_kernels);
   if(ret != CL_SUCCESS){
 	fprintf(stderr,"Faild clCreateKernelsInProgram %d\n",ret);
@@ -114,7 +135,7 @@ int gemm_fpga_init () {
   }
 
 /* Create OpenCL Kernel */
-  char kernel_name[128]="gemm_nn";
+  char kernel_name[128]="gemm_nn_20W";
   kernel = clCreateKernel (program, kernel_name, &ret);
   if(ret != CL_SUCCESS){
 	fprintf(stderr,"Faild clCreateKernel %d\n",ret);
@@ -137,6 +158,13 @@ void gemm_nn_fpga(int M, int N, int K, float ALPHA,
   if(ret1 != CL_SUCCESS || ret2 != CL_SUCCESS || ret3 != CL_SUCCESS){
 	fprintf(stderr,"Faild clCreateBuffer %d %d %d\n",ret1,ret2,ret3);
 	exit(ret3);
+  }
+  if(!(K%27)){
+    kernel = nkernel[0];
+    printf("9W-kernel M/N/K=%d/%d/%d\n",M,N,K);
+  }else{
+    kernel = nkernel[1];
+    printf("fW-kernel M/N/K=%d/%d/%d\n",M,N,K);
   }
 /* Set OpenCL Kernel Parameters */
   ret|= clSetKernelArg (kernel, 0, sizeof (cl_int),  &M);

@@ -3,8 +3,8 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 GPU=0
 CUDNN=0
 OPENCV?=1
-OPENMP=0
 DEBUG?=1
+FPGA?=1
 
 ARCH= \
       -gencode arch=compute_30,code=sm_30 \
@@ -30,8 +30,11 @@ LDFLAGS= -lm -pthread
 COMMON= -Iinclude/ -Isrc/
 CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
-ifeq ($(OPENMP), 1) 
-CFLAGS+= -fopenmp
+ifeq ($(FPGA), 1) 
+CFLAGS+= -DFPGA
+OBJ+=gemm_fpga.o
+CFLAGS+= $(shell aocl compile-config)
+LDFLAGS+= $(shell aocl link-config)
 endif
 
 ifeq ($(DEBUG), 1) 
@@ -95,6 +98,9 @@ $(OBJDIR)%.o: %.c $(DEPS)
 
 $(OBJDIR)%.o: %.cu $(DEPS)
 	$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+
+gemm1.aocx:gemm1.cl
+	aoc -march=emulator -g -v -report $^ -o $(@)
 
 obj:
 	mkdir -p obj

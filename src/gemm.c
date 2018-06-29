@@ -231,12 +231,21 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
             C[i*ldc + j] *= BETA;
         }
     }
+    float *c=(float*)malloc(M*N*sizeof(float));
+    for(i=0;i<M*N;i++) c[i]=.0f;
     if(!TA && !TB){
 #ifdef FPGA
         if(!FPGA_init){FPGA_init=1;gemm_fpga_init();}
-        gemm_nn_fpga(M, N, K, ALPHA, A, lda, B, ldb, C, ldc);
+        gemm_nn_fpga  (M, N, K, ALPHA, A, lda, B, ldb, C, ldc);
+        gemm_nn_cmajor(M, N, K, ALPHA, A, lda, B, ldb, c, ldc);
+        for(i=0;i<M*N;i++){
+            if((C[i]-c[i])>.000001f){
+                printf("index-%d %f %f\n",i,C[i],c[i]);
+                break;
+            }
+        }
 #else
-        gemm_nn_cmajor(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+        gemm_nn_cmajor(M, N, K, ALPHA, A, lda, B, ldb, C, ldc);
 #endif
     }else if(TA && !TB)
         gemm_tn(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
@@ -244,6 +253,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         gemm_nt(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
     else
         gemm_tt(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+    free(c);
 }
 
 #ifdef GPU

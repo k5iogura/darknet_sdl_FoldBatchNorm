@@ -543,16 +543,16 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
         }
     }
     for(i = 0; i < l.batch; ++i){
-        float *B = (float*)malloc(sizeof(float)*k*n);
+        float *B = (float*)calloc(k*n,sizeof(float));
         im2col_cpu(net.input, l.c, l.h, l.w, 
                 l.size, l.stride, l.pad, b);
-        float xx=0,yy=0;
+        double xx=0,yy=0;
         int j;
         for(j=0;j<n*k;j++) xx+=b[j];
         row2col_major(n,k,b,B);
         for(j=0;j<n*k;j++) yy+=B[j];
-        if(xx!=yy){
-            printf("xx/yy=%f/%f\n",xx,yy);
+        if((xx-yy)>0.000001f){
+            printf("n,k,m = %d/%d/%d xx/yy=%e/%e dif=%e\n",n,k,m,xx,yy,(xx-yy));
             exit(0);
         }
         if(l.binary)

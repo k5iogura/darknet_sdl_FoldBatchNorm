@@ -23,6 +23,12 @@ void gemm_nn_sign( int M, int N, int K,
                     float *B, int ldb,
                     float *C, int ldc);
 
+void gemm_nn_cmajor( int M, int N, int K,
+                    float scale,
+                    float *A, int lda, 
+                    float *B, int ldb,
+                    float *C, int ldc);
+
 void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         float *A, int lda, 
         float *B, int ldb,

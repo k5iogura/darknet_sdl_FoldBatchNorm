@@ -13,5 +13,9 @@ void find_CKQ(
     const char *platform_name, const char *kernel_file, const char *kernel_name,
     cl_context *context, cl_kernel *kernel, cl_command_queue *queue
 );
+void find_CnKQ(
+    const char *platform_name, const char *kernel_file, int n, const char *kernel_name[],
+    cl_context *context, cl_kernel kernel[], cl_command_queue *queue
+);
 
 #endif

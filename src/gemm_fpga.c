@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include "cl_head.h"
 
+#include "fp16.h"
+
 #ifdef FPGA
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -27,11 +29,10 @@ static cl_kernel nkernel[10];
 static cl_platform_id platform_id = NULL;
 
 int gemm_fpga_init () {
-  int i,j,k;
+  int i,j;
   cl_uint ret_num_devices;
   cl_uint ret_num_platforms;
   cl_int ret;
-  cl_int ret1,ret2,ret3;
 
     const char *k_name[2]={"gemm_nn9W","gemm_nnfW"};
     find_CnKQ(
@@ -145,17 +146,35 @@ return CL_SUCCESS;
   return ret;
 }
 
+#ifdef FP32
+typedef float KERNEL_IN;
+#else
+typedef cl_half KERNEL_IN;
+#endif
 void gemm_nn_fpga(int M, int N, int K, float ALPHA, 
         float *A, int lda, 
         float *B, int ldb,
         float *C, int ldc) {
-  cl_int ret,ret1,ret2,ret3;
+  cl_int ret=0,ret1,ret2,ret3;
+  int i;
+#ifdef FP32
+  float *Af=A;
+  float *Bf=B;
+  float *Cf=C;
+#else
+  fp16 *Af = (fp16*)malloc(M*K*2);
+  fp16 *Bf = (fp16*)malloc(N*K*2);
+  fp16 *Cf = (fp16*)malloc(M*N*2);
+  for(i=0;i<M*K;i++) Af[i] = f2h(A[i]);
+  for(i=0;i<N*K;i++) Bf[i] = f2h(B[i]);
+  for(i=0;i<M*N;i++) Cf[i] = f2h(C[i]);
+#endif
   memobjA = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
-					M * K * sizeof (float), A, &ret1);
+					M * K * sizeof (KERNEL_IN), Af, &ret1);
   memobjB = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
-					K * N * sizeof (float), B, &ret2);
+					K * N * sizeof (KERNEL_IN), Bf, &ret2);
   memobjC = clCreateBuffer (context, CL_MEM_READ_WRITE|CL_MEM_USE_HOST_PTR,
-					M * N * sizeof (float), C, &ret3);
+					M * N * sizeof (KERNEL_IN), Cf, &ret3);
   if(ret1 != CL_SUCCESS || ret2 != CL_SUCCESS || ret3 != CL_SUCCESS){
 	fprintf(stderr,"Faild clCreateBuffer %d %d %d\n",ret1,ret2,ret3);
 	exit(ret3);
@@ -187,6 +206,12 @@ void gemm_nn_fpga(int M, int N, int K, float ALPHA,
 	  ret = clReleaseMemObject (memobjB);
 	  ret = clReleaseMemObject (memobjC);
   }else{fprintf(stderr,"clEnqueueTask Error %d\n",ret);exit(-1);}
+#ifndef FP32
+  for(i=0;i<M*N;i++) C[i] = h2f(Cf[i]);
+  free(Af);
+  free(Bf);
+  free(Cf);
+#endif
   return;
 }
 

@@ -3,9 +3,9 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 GPU=0
 CUDNN=0
 OPENCV?=1
-DEBUG?=1
-FPGA_EMU?=1
-FP32=0
+DEBUG?=0
+FPGA_EMU?=0
+FP32=1
 
 ARCH= \
       -gencode arch=compute_30,code=sm_30 \
@@ -32,7 +32,15 @@ LDFLAGS= $(shell pkg-config --libs IlmBase) -lm -pthread
 COMMON= -Iinclude/ -Isrc/
 CFLAGS=-Wall -Wno-unknown-pragmas -Wfatal-errors -fPIC
 
+AOCX=gemm1.aocx
 ifeq ($(FPGA_EMU), 1) 
+FPGA_DEVICE=-march=emulator
+CFLAGS+= -DFPGA
+OBJ+=gemm_fpga.o
+CFLAGS+= $(shell aocl compile-config)
+LDFLAGS+= $(shell aocl link-config)
+else
+FPGA_DEVICE=
 CFLAGS+= -DFPGA
 OBJ+=gemm_fpga.o
 CFLAGS+= $(shell aocl compile-config)
@@ -111,8 +119,8 @@ $(OBJDIR)%.o: %.cu $(DEPS)
 $(OBJDIR)fp16.o:src/fp16.cpp
 	$(CXX) -c -o $@ $^ -I /usr/local/include $(CFLAGS)
 
-gemm1.aocx:$(GEMM1_CL)
-	aoc -march=emulator -g -v -report $^ -o $(@)
+$(AOCX):$(GEMM1_CL)
+	aoc $(FPGA_DEVICE) -g -v -report $^ -o $(@)
 
 obj:
 	mkdir -p obj
@@ -124,5 +132,5 @@ results:
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJS) $(SLIB) $(ALIB) $(EXEC) $(EXECOBJ)
+	rm -rf $(OBJS) $(SLIB) $(ALIB) $(EXEC) $(EXECOBJ) $(AOCX)
 

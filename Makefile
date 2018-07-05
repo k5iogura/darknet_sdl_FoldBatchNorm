@@ -4,6 +4,7 @@ GPU=0
 CUDNN=0
 OPENCV?=1
 DEBUG?=0
+FPGA?=0
 FPGA_EMU?=0
 FP32=1
 
@@ -40,8 +41,10 @@ OBJ+=gemm_fpga.o
 CFLAGS+= $(shell aocl compile-config)
 LDFLAGS+= $(shell aocl link-config)
 else
+ifeq (%(FPGA),1)
 FPGA_DEVICE=
 CFLAGS+= -DFPGA
+endif
 OBJ+=gemm_fpga.o
 CFLAGS+= $(shell aocl compile-config)
 LDFLAGS+= $(shell aocl link-config)

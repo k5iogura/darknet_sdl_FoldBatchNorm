@@ -544,17 +544,28 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
         }
     }
     for(i = 0; i < l.batch; ++i){
+        //float *C = (float*)malloc(m*n*sizeof(float));
         //float *B = (float*)malloc(k*n*sizeof(float));
+        int j,flag;
+        //for(j=0;j<m*n;j++)C[j]=0;
         //im2col_cpu(net.input, l.c, l.h, l.w, 
                 //l.size, l.stride, l.pad, b);
         im2col_cpu2(net.input, l.c, l.h, l.w, 
                 l.size, l.stride, l.pad, b);
+        //im2col_cpu_mm(net.input, l.c, l.h, l.w, 
+                //l.size, l.stride, l.pad, b,
+                //m, n, k, a, c);
         //row2col_major(n,k,b,B);
         if(l.binary)
             gemm_nn_sign(m,n,k,l.scale_alpha,l.signWb,k,b,n,c,n);
             //gemm_nn_binary(m,n,k,a,k,b,n,c,n);
         else
             gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
+        //for(j=0,flag=0;j<m*n;j++)
+            //if (c[j] != C[j]){
+                //printf("m/n/k = %d/%d/%d\t%f %f\n",m,n,k,c[j],C[j]);
+                //if(flag++>3)break;
+            //}
         c += n*m;
         net.input += l.c*l.h*l.w;
         //free(B);

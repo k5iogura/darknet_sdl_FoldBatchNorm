@@ -226,26 +226,31 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float *C, int ldc)
 {
     //printf("cpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
-    int i, j;
-    for(i = 0; i < M; ++i){
-        for(j = 0; j < N; ++j){
-            C[i*ldc + j] *= BETA;
-        }
-    }
-    float *c=(float*)malloc(M*N*sizeof(float));
-    //fill_cpu(M*N, .0f, c, 1);
-    for(i=0;i<M*N;i++) c[i]=.0f;
+    int i, j, k;
+    static double elapse=0.0;
+    //for(i = 0; i < M; ++i){
+        //for(j = 0; j < N; ++j){
+            //C[i*ldc + j] *= BETA;
+        //}
+    //}
+    //float *c=(float*)malloc(M*N*sizeof(float));
+    //for(i=0;i<M*N;i++) c[i]=.0f;
     if(!TA && !TB){
 #ifdef FPGA
-        if(!FPGA_init){FPGA_init=1;gemm_fpga_init();}
+        //if(!FPGA_init){FPGA_init=1;gemm_fpga_init();}
+        double start = what_time_is_it_now();
         gemm_nn_fpga  (M, N, K, ALPHA, A, lda, B, ldb, C, ldc);
-        gemm_nn_cmajor(M, N, K, ALPHA, A, lda, B, ldb, c, ldc);
-        for(i=0;i<M*N;i++){
-            if(fabs(C[i]-c[i])>.000001f){
-                printf("index-%d %f %f\n",i,C[i],c[i]);
-                break;
-            }
-        }
+        double end = what_time_is_it_now();
+        elapse+=(end-start);
+        printf("%e %e\n",(end-start),elapse);
+        //gemm_nn_cmajor(M, N, K, ALPHA, A, lda, B, ldb, c, ldc);
+        //for(i=0,k=3;i<M*N;i++){
+            //if(fabs(C[i]-c[i])>.000001f){
+                //printf("index-%d %f %f\n",i,C[i],c[i]);
+                //k--;
+            //}
+            //if(!k)break;
+        //}
 #else
         gemm_nn_cmajor(M, N, K, ALPHA, A, lda, B, ldb, C, ldc);
 #endif
@@ -255,7 +260,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         gemm_nt(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
     else
         gemm_tt(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
-    free(c);
+    //free(c);
 }
 
 #ifdef GPU

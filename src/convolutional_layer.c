@@ -504,7 +504,7 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
     int out_w = l.out_w;
     int i;
 
-    fill_cpu(l.outputs*l.batch, 0, l.output, 1);
+    //fill_cpu(l.outputs*l.batch, 0, l.output, 1);
     if(l.binary){
         binarize_w2sign(l.weights, l.n, l.c*l.size*l.size, l.signWb, l.scale_alpha);
 //        binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
@@ -544,18 +544,20 @@ void forward_convolutional_layer_cpu(convolutional_layer l, network net)
         }
     }
     for(i = 0; i < l.batch; ++i){
-        float *B = (float*)calloc(k*n,sizeof(float));
-        im2col_cpu(net.input, l.c, l.h, l.w, 
+        //float *B = (float*)malloc(k*n*sizeof(float));
+        //im2col_cpu(net.input, l.c, l.h, l.w, 
+                //l.size, l.stride, l.pad, b);
+        im2col_cpu2(net.input, l.c, l.h, l.w, 
                 l.size, l.stride, l.pad, b);
-        row2col_major(n,k,b,B);
+        //row2col_major(n,k,b,B);
         if(l.binary)
             gemm_nn_sign(m,n,k,l.scale_alpha,l.signWb,k,b,n,c,n);
             //gemm_nn_binary(m,n,k,a,k,b,n,c,n);
         else
-            gemm(0,0,m,n,k,1,a,k,B,n,1,c,n);
+            gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
         c += n*m;
         net.input += l.c*l.h*l.w;
-        free(B);
+        //free(B);
     }
     if(0 && l.batch_normalize){ //add for foldBN test
         int j;

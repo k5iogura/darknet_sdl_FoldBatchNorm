@@ -623,6 +623,9 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
     fprintf(stderr,"recall:%s\n",name_list);
 }
 
+#ifdef FPGA
+    int gemm_fpga_init();
+#endif
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
     list *options = read_data_cfg(datacfg);
@@ -635,6 +638,9 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         load_weights(&net, weightfile);
     }
     set_batch_network(&net, 1);
+#ifdef FPGA
+    gemm_fpga_init();
+#endif
     srand(2222222);
     double time;
     char buff[256];

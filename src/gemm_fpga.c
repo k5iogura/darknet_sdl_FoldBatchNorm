@@ -6,6 +6,7 @@
 #include "cl_head.h"
 
 #include "fp16.h"
+//#include <OpenEXR/half.h>
 
 #ifdef FPGA
 #ifdef __APPLE__
@@ -146,57 +147,71 @@ return CL_SUCCESS;
   return ret;
 }
 
-#ifdef FP32
-typedef float KERNEL_IN;
-#else
-typedef cl_half KERNEL_IN;
-#endif
 void gemm_nn_fpga(int M, int N, int K, float ALPHA, 
         float *A, int lda, 
         float *B, int ldb,
         float *C, int ldc) {
   cl_int ret=0,ret1,ret2,ret3;
   int i;
-#ifdef FP32
-  float *Af=A;
-  float *Bf=B;
-  float *Cf=C;
-#else
-  fp16 *Af = (fp16*)malloc(M*K*2);
-  fp16 *Bf = (fp16*)malloc(N*K*2);
-  fp16 *Cf = (fp16*)malloc(M*N*2);
-  for(i=0;i<M*K;i++) Af[i] = f2h(A[i]);
-  for(i=0;i<N*K;i++) Bf[i] = f2h(B[i]);
-  for(i=0;i<M*N;i++) Cf[i] = f2h(C[i]);
-#endif
-  memobjA = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
-					M * K * sizeof (KERNEL_IN), Af, &ret1);
-  memobjB = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
-					K * N * sizeof (KERNEL_IN), Bf, &ret2);
-  memobjC = clCreateBuffer (context, CL_MEM_READ_WRITE|CL_MEM_USE_HOST_PTR,
-					M * N * sizeof (KERNEL_IN), Cf, &ret3);
-  if(ret1 != CL_SUCCESS || ret2 != CL_SUCCESS || ret3 != CL_SUCCESS){
-	fprintf(stderr,"Faild clCreateBuffer %d %d %d\n",ret1,ret2,ret3);
-	exit(ret3);
-  }
-  if(!(K%27)){
-    kernel = nkernel[0];
-    printf("9W-kernel M/N/K=%d/%d/%d\n",M,N,K);
+  fp16  *Af, *Bf, *Cf;
+  //half  *Af, *Bf, *Cf;
+  float *A4, *B4, *C4;
+  if(!(K%16) || !(K%9)){
+    Af = (fp16*)malloc(M*K*2);
+    Bf = (fp16*)malloc(N*K*2);
+    Cf = (fp16*)malloc(M*N*2);
+    //Af = (half*)malloc(M*K*2);
+    //Bf = (half*)malloc(N*K*2);
+    //Cf = (half*)malloc(M*N*2);
+    for(i=0;i<M*K;i++) Af[i] = f2h(A[i]);
+    for(i=0;i<N*K;i++) Bf[i] = f2h(B[i]);
+    for(i=0;i<M*N;i++) Cf[i] = f2h(C[i]);
+    //for(i=0;i<M*K;i++) Af[i] = A[i];
+    //for(i=0;i<N*K;i++) Bf[i] = B[i];
+    //for(i=0;i<M*N;i++) Cf[i] = C[i];
+    if(!(K%16))
+        kernel = nkernel[1];
+    else
+        kernel = nkernel[0];
+    printf("fW-kernel M/N/K=%d/%d/%d\t",M,N,K);
+    memobjA = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
+					  M * K * sizeof (cl_half), Af, &ret1);
+    memobjB = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
+					  K * N * sizeof (cl_half), Bf, &ret2);
+    memobjC = clCreateBuffer (context, CL_MEM_READ_WRITE|CL_MEM_USE_HOST_PTR,
+					  M * N * sizeof (cl_half), Cf, &ret3);
+    if(ret1 != CL_SUCCESS || ret2 != CL_SUCCESS || ret3 != CL_SUCCESS){
+	  fprintf(stderr,"Faild clCreateBuffer-xf %d %d %d\n",ret1,ret2,ret3);
+	  exit(ret3);
+    }
   }else{
-    kernel = nkernel[1];
-    printf("fW-kernel M/N/K=%d/%d/%d\n",M,N,K);
+    A4=A;
+    B4=B;
+    C4=C;
+    kernel = nkernel[0];
+    printf("9W-kernel M/N/K=%d/%d/%d\t",M,N,K);
+    memobjA = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
+					  M * K * sizeof (cl_float), A4, &ret1);
+    memobjB = clCreateBuffer (context, CL_MEM_READ_ONLY|CL_MEM_USE_HOST_PTR,
+					  K * N * sizeof (cl_float), B4, &ret2);
+    memobjC = clCreateBuffer (context, CL_MEM_READ_WRITE|CL_MEM_USE_HOST_PTR,
+					  M * N * sizeof (cl_float), C4, &ret3);
+    if(ret1 != CL_SUCCESS || ret2 != CL_SUCCESS || ret3 != CL_SUCCESS){
+	  fprintf(stderr,"Faild clCreateBuffer-x9 %d %d %d\n",ret1,ret2,ret3);
+	  exit(ret3);
+    }
   }
 /* Set OpenCL Kernel Parameters */
-  ret|= clSetKernelArg (kernel, 0, sizeof (cl_int),  &M);               checkErr(ret,"clSetKernelArg-0");
-  ret|= clSetKernelArg (kernel, 1, sizeof (cl_int),  &N);               checkErr(ret,"clSetKernelArg-1");
-  ret|= clSetKernelArg (kernel, 2, sizeof (cl_int),  &K);               checkErr(ret,"clSetKernelArg-2");
-  ret|= clSetKernelArg (kernel, 3, sizeof (cl_float),&ALPHA);           checkErr(ret,"clSetKernelArg-3");
-  ret|= clSetKernelArg (kernel, 4, sizeof (cl_mem), (void *) &memobjA); checkErr(ret,"clSetKernelArg-4");
-  ret|= clSetKernelArg (kernel, 5, sizeof (cl_int),  &K);               checkErr(ret,"clSetKernelArg-5");
-  ret|= clSetKernelArg (kernel, 6, sizeof (cl_mem), (void *) &memobjB); checkErr(ret,"clSetKernelArg-6");
-  ret|= clSetKernelArg (kernel, 7, sizeof (cl_int),  &N);               checkErr(ret,"clSetKernelArg-7");
-  ret|= clSetKernelArg (kernel, 8, sizeof (cl_mem), (void *) &memobjC); checkErr(ret,"clSetKernelArg-8");
-  ret|= clSetKernelArg (kernel, 9, sizeof (cl_int),  &N);               checkErr(ret,"clSetKernelArg-9");
+  ret|= clSetKernelArg (kernel, 0, sizeof (cl_int),  &M);
+  ret|= clSetKernelArg (kernel, 1, sizeof (cl_int),  &N);
+  ret|= clSetKernelArg (kernel, 2, sizeof (cl_int),  &K);
+  ret|= clSetKernelArg (kernel, 3, sizeof (cl_float),&ALPHA);
+  ret|= clSetKernelArg (kernel, 4, sizeof (cl_mem), (void *) &memobjA);
+  ret|= clSetKernelArg (kernel, 5, sizeof (cl_int),  &K);
+  ret|= clSetKernelArg (kernel, 6, sizeof (cl_mem), (void *) &memobjB);
+  ret|= clSetKernelArg (kernel, 7, sizeof (cl_int),  &N);
+  ret|= clSetKernelArg (kernel, 8, sizeof (cl_mem), (void *) &memobjC);
+  ret|= clSetKernelArg (kernel, 9, sizeof (cl_int),  &N);
 
 /* Execute OpenCL Kernel */
   ret = clEnqueueTask (command_queue, kernel, 0, NULL, NULL);
@@ -206,12 +221,13 @@ void gemm_nn_fpga(int M, int N, int K, float ALPHA,
 	  ret = clReleaseMemObject (memobjB);
 	  ret = clReleaseMemObject (memobjC);
   }else{fprintf(stderr,"clEnqueueTask Error %d\n",ret);exit(-1);}
-#ifndef FP32
-  for(i=0;i<M*N;i++) C[i] = h2f(Cf[i]);
-  free(Af);
-  free(Bf);
-  free(Cf);
-#endif
+  if(!(K%16) || !(K%9)){
+    for(i=0;i<M*N;i++) C[i] = h2f(Cf[i]);
+    //for(i=0;i<M*N;i++) C[i] = Cf[i];
+    free(Af);
+    free(Bf);
+    free(Cf);
+  }
   return;
 }
 
@@ -230,5 +246,7 @@ void gemm_fpga_finalize(){
   if(ret==CL_SUCCESS)fprintf(stderr,"gemm fpga finalized.\n");
   return ;
 }
+#else
+int gemm_fpga_init () {return 0;}
 #endif
 

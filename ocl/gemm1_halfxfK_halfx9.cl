@@ -47,7 +47,7 @@ kernel void gemm_nnfW (const int M, const int N, const int K, const float ALPHA,
       ABUF[ k ] = vload_half16(( i*wlda + k + 0 ), A);
     }
     for (j = 0; j < N; ++j) {
-      double Cn;
+      float Cn;
       for (k = 0, Cn = C[ i*ldc + j ];k < wK; ++k) {
         float16 Ax1= ABUF[ k ];
         float16 Bx1= vload_half16(( j*wlda + k + 0 ), B);

@@ -6,7 +6,7 @@ OPENCV?=1
 DEBUG?=0
 FPGA?=0
 FPGA_EMU?=0
-FP32=1
+FP32=0
 
 ARCH= \
       -gencode arch=compute_30,code=sm_30 \
@@ -54,7 +54,7 @@ ifeq ($(FP32),1)
 CFLAGS+= -DFP32
 GEMM1_CL= ocl/gemm1_float.cl
 else
-GEMM1_CL= ocl/gemm1_half.cl
+GEMM1_CL= ocl/gemm1_halfxf_halfx9.cl
 endif
 
 ifeq ($(DEBUG), 1) 

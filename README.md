@@ -1,4 +1,4 @@
-<--! ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) -->
+<-! ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) ->
 <img src="./files/Magic_formation.png" alt="logo" width="250"/>
 
 # Darknet#
